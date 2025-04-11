@@ -33,11 +33,33 @@ sudo rm -rf /var/log/zabbix
 sudo rm -rf /var/log/nginx
 sudo rm -rf /var/log/php-fpm
 
-echo "### Opcional: Limpiando reglas de firewall..."
-# sudo firewall-cmd --permanent --remove-port=8080/tcp
-# sudo firewall-cmd --reload
+echo "### Verificando limpieza completa..."
 
-echo "### Opcional: Restaurando configuración de localización..."
-# sudo localectl set-locale LANG=en_US.UTF-8
+echo "--- Servicios activos relacionados:"
+sudo systemctl list-units --type=service | grep -E 'zabbix|nginx|postgres|php' || echo "No hay servicios activos."
 
-echo "### Desinstalación completada!"
+echo "--- Procesos en ejecución relacionados:"
+ps aux | grep -E 'zabbix|nginx|postgres|php' | grep -v grep || echo "No hay procesos en ejecución."
+
+echo "--- Puertos en escucha relacionados:"
+sudo ss -tuln | grep -E '80|443|5432|10050|10051' || echo "No hay puertos en uso."
+
+echo "--- Paquetes instalados relacionados:"
+rpm -qa | grep -E 'zabbix|postgres|nginx|php' || echo "No hay paquetes instalados."
+
+echo "--- Directorios residuales:"
+for dir in /etc/zabbix /var/lib/pgsql /etc/nginx/conf.d/zabbix.conf /var/log/zabbix /var/log/nginx /var/log/php-fpm; do
+    if [ -e "$dir" ]; then
+        echo "Existe: $dir"
+    else
+        echo "No existe: $dir"
+    fi
+done
+
+echo "--- Repositorios habilitados:"
+sudo dnf repolist | grep zabbix || echo "No hay repositorios de Zabbix."
+
+echo "--- Reglas de firewall relacionadas (puertos comunes):"
+sudo firewall-cmd --list-all | grep -E '80|443|5432|10050|10051' || echo "No hay reglas de firewall para estos puertos."
+
+echo "### Desinstalación y limpieza completadas ✅"
